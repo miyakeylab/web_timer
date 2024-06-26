@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>バチェロレッテ3同時視聴タイマー</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            font-size: 4em; /* タイトルを大きくする */
+            margin-bottom: 20px;
+        }
+        #timer {
+            font-size: 5em; /* タイマーを大きくする */
+            margin-bottom: 20px;
+        }
+        #progressBar {
+            font-size: 2em; /* プログレスバーのフォントサイズを設定 */
+            margin-bottom: 20px;
+        }
+        .button-container {
+            display: flex;
+            gap: 10px; /* ボタン間の隙間を設定 */
+        }
+        button {
+            font-size: 2em; /* ボタンのフォントサイズを大きくする */
+            padding: 15px 30px; /* ボタンのパディングを大きくする */
+            margin: 5px;
+        }
+        /* モーダルのスタイル */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        input {
+            font-size: 2em;
+            padding: 10px;
+            margin: 10px 0;
+            width: 80%;
+        }
+    </style>
+</head>
+<body>
+<h1>バチェロレッテ3同時視聴タイマー</h1>
+<div id="timer">00:00:00</div>
+<div id="progressBar"></div>
+<div class="button-container">
+    <button id="startButton">開始</button>
+    <button id="stopButton">停止</button>
+    <button id="resetButton">リセット</button>
+    <button id="openModalButton">開始時間設定</button>
+</div>
+
+<!-- モーダル -->
+<div id="timeModal" class="modal">
+    <div class="modal-content">
+        <span class="close" id="closeModal">&times;</span>
+        <h2>開始時間設定</h2>
+        <input type="text" id="startTimeInput" placeholder="hh:mm:ss">
+        <button id="startFromTimeButton">指定時間から開始</button>
+    </div>
+</div>
+
+<script>
+    let timerInterval;
+    let progressBarInterval;
+    let timeInSeconds = 0;
+    let progressCount = 0;
+
+    function formatTime(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainingSeconds = seconds % 60;
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+    }
+
+    function parseTime(timeString) {
+        const [hours, minutes, seconds] = timeString.split(':').map(Number);
+        return (hours * 3600) + (minutes * 60) + seconds;
+    }
+
+    function updateTimer() {
+        document.getElementById('timer').innerText = formatTime(timeInSeconds);
+        timeInSeconds++;
+    }
+
+    function updateProgressBar() {
+        const progressBar = document.getElementById('progressBar');
+        progressBar.innerText = '🌹'.repeat(progressCount);
+        if (progressCount === 10) {
+            progressCount = 1;
+        } else {
+            progressCount++;
+        }
+    }
+
+    function resetTimer() {
+        clearInterval(timerInterval);
+        clearInterval(progressBarInterval);
+        timerInterval = null;
+        progressBarInterval = null;
+        timeInSeconds = 0;
+        progressCount = 0;
+        document.getElementById('timer').innerText = formatTime(timeInSeconds);
+        document.getElementById('progressBar').innerText = '';
+    }
+
+    document.getElementById('startButton').addEventListener('click', () => {
+        if (!timerInterval) {
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+        if (!progressBarInterval) {
+            progressBarInterval = setInterval(updateProgressBar, 1000);
+        }
+    });
+
+    document.getElementById('stopButton').addEventListener('click', () => {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        clearInterval(progressBarInterval);
+        progressBarInterval = null;
+    });
+
+    document.getElementById('resetButton').addEventListener('click', () => {
+        resetTimer();
+    });
+
+    // モーダルの表示と閉じる機能
+    const modal = document.getElementById('timeModal');
+    const openModalButton = document.getElementById('openModalButton');
+    const closeModalButton = document.getElementById('closeModal');
+
+    openModalButton.addEventListener('click', () => {
+        modal.style.display = 'block';
+    });
+
+    closeModalButton.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    document.getElementById('startFromTimeButton').addEventListener('click', () => {
+        const startTimeInput = document.getElementById('startTimeInput').value;
+        if (startTimeInput) {
+            timeInSeconds = parseTime(startTimeInput);
+            progressCount = (timeInSeconds % 10); // adjust the progressCount based on the start time
+            document.getElementById('timer').innerText = formatTime(timeInSeconds);
+            document.getElementById('progressBar').innerText = '🌹'.repeat(progressCount);
+        }
+        modal.style.display = 'none';
+        if (!timerInterval) {
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+        if (!progressBarInterval) {
+            progressBarInterval = setInterval(updateProgressBar, 1000);
+        }
+    });
+</script>
+</body>
+</html>
